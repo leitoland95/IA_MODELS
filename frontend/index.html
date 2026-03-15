@@ -25,29 +25,53 @@
   <script>
     const sendBtn = document.getElementById("sendBtn");
     const promptBox = document.getElementById("promptBox");
+    const imageUpload = document.getElementById("imageUpload");
     const responseBox = document.getElementById("responseBox");
     const logsBox = document.getElementById("logsBox");
 
     sendBtn.addEventListener("click", async () => {
       const prompt = promptBox.value.trim();
-      if (!prompt) {
-        logsBox.value += "No se ingresó ningún prompt\n";
+      const file = imageUpload.files[0];
+
+      // Construir input dinámico
+      const input = [];
+      if (prompt) input.push(prompt);
+      if (file) {
+        const base64 = await toBase64(file);
+        input.push({ type: "image", data: base64 });
+      }
+
+      if (input.length === 0) {
+        logsBox.value += "No se ingresó prompt ni imagen\n";
         return;
       }
 
-      logsBox.value += `Consultando modelo con: ${prompt}\n`;
+      logsBox.value += "Enviando al modelo...\n";
 
       try {
-        const response = await puter.ai.chat(prompt, { model: "gpt-5-nano" });
-        responseBox.value = response;
+        const response = await puter.ai.run({
+          model: "google/gemini-2.5-flash",
+          input: input
+        });
+        responseBox.value = response.output_text;
         logsBox.value += "Respuesta recibida\n";
       } catch (err) {
         logsBox.value += "Error: " + err.message + "\n";
       }
 
-      // Limpiar la caja de prompt después de enviar
+      // Limpiar prompt después de enviar
       promptBox.value = "";
     });
+
+    // Función auxiliar para convertir archivo a base64
+    function toBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+      });
+    }
   </script>
 </body>
 </html>
