@@ -603,7 +603,7 @@ def switch_default():
     driver.switch_to.default_content()
     return {"status": "success", "message": "Regresado al contexto principal"}
     
- @app.post("/click_actionchains")
+@app.post("/click_actionchains")
 def click_actionchains(req: ClickRequest):
     try:
         elem = driver.find_element(By.XPATH, req.xpath)
