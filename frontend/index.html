@@ -16,6 +16,9 @@
 
   <button id="sendBtn">Enviar</button><br><br>
 
+  <label>URL de la imagen subida:</label><br>
+  <input type="text" id="imageUrlBox" readonly style="width:400px;"><br><br>
+
   <label>Respuesta del modelo:</label><br>
   <textarea id="responseBox" rows="5" cols="50"></textarea><br><br>
 
@@ -26,34 +29,56 @@
     const sendBtn = document.getElementById("sendBtn");
     const promptBox = document.getElementById("promptBox");
     const imageUpload = document.getElementById("imageUpload");
+    const imageUrlBox = document.getElementById("imageUrlBox");
     const responseBox = document.getElementById("responseBox");
     const logsBox = document.getElementById("logsBox");
 
+    // Subir imagen automáticamente al seleccionar archivo
+    imageUpload.addEventListener("change", async () => {
+      const file = imageUpload.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      logsBox.value += "Subiendo imagen...\n";
+
+      try {
+        const res = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.url) {
+          imageUrlBox.value = data.url;
+          logsBox.value += "Imagen subida correctamente\n";
+        } else {
+          logsBox.value += "Error: el backend no devolvió URL\n";
+        }
+      } catch (err) {
+        logsBox.value += "Error al subir imagen: " + err.message + "\n";
+      }
+    });
+
+    // Al presionar enviar, usar imageUrlBox si existe
     sendBtn.addEventListener("click", async () => {
       const prompt = promptBox.value.trim();
-      const file = imageUpload.files[0];
+      const imageUrl = imageUrlBox.value.trim();
 
-      // Construir input dinámico
-      const input = [];
-      if (prompt) input.push(prompt);
-      if (file) {
-        const base64 = await toBase64(file);
-        input.push({ type: "image", data: base64 });
-      }
-
-      if (input.length === 0) {
+      if (!prompt && !imageUrl) {
         logsBox.value += "No se ingresó prompt ni imagen\n";
         return;
       }
 
-      logsBox.value += "Enviando al modelo...\n";
+      logsBox.value += "Consultando modelo...\n";
 
       try {
-        const response = await puter.ai.run({
-          model: "google/gemini-2.5-flash",
-          input: input
-        });
-        responseBox.value = response.output_text;
+        const response = await puter.ai.chat(
+          prompt || "Describe la imagen",
+          imageUrl || null,
+          { model: "google/gemini-2.5-flash" }
+        );
+        responseBox.value = response;
         logsBox.value += "Respuesta recibida\n";
       } catch (err) {
         logsBox.value += "Error: " + err.message + "\n";
@@ -62,16 +87,6 @@
       // Limpiar prompt después de enviar
       promptBox.value = "";
     });
-
-    // Función auxiliar para convertir archivo a base64
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result);
-        reader.onerror = error => reject(error);
-      });
-    }
   </script>
 </body>
 </html>
