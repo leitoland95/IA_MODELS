@@ -2,97 +2,52 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Frontend AI Vision con Logs Backend</title>
-  <style>
-    body { font-family: Arial, sans-serif; margin: 20px; }
-    textarea { width: 100%; height: 150px; margin-top: 10px; }
-    input, button { margin-top: 10px; display: block; }
-    #logs { background: #f4f4f4; padding: 10px; margin-top: 20px; font-size: 14px; }
-  </style>
+  <title>Analizador de Imágenes con Puter</title>
+  <script src="https://js.puter.com/v2/"></script>
 </head>
 <body>
-  <h1>Analizador de Imágenes con Puter</h1>
+  <h2>Analizador de Imágenes con Puter</h2>
 
-  <!-- Prompt -->
-  <label for="prompt">Escribe tu prompt:</label>
-  <input type="text" id="prompt" placeholder="Ej: Describe esta imagen en detalle">
+  <label>Escribe tu prompt:</label><br>
+  <input type="text" id="promptBox" placeholder="Escribe aquí..."><br><br>
 
-  <!-- Imagen -->
-  <label for="imageInput">Adjuntar imagen:</label>
-  <input type="file" id="imageInput" accept="image/*">
+  <label>Adjuntar imagen:</label><br>
+  <input type="file" id="imageUpload"><br><br>
 
-  <!-- Botón -->
-  <button onclick="enviar()">Enviar</button>
+  <button id="sendBtn">Enviar</button><br><br>
 
-  <!-- Respuesta -->
-  <h3>Respuesta del modelo:</h3>
-  <textarea id="responseBox" readonly></textarea>
+  <label>Respuesta del modelo:</label><br>
+  <textarea id="responseBox" rows="5" cols="50"></textarea><br><br>
 
-  <!-- Logs -->
-  <h3>Logs:</h3>
-  <div id="logs"></div>
+  <label>Logs:</label><br>
+  <textarea id="logsBox" rows="5" cols="50"></textarea>
 
-  <script type="module">
-    import puter from "https://cdn.jsdelivr.net/npm/puter-js@latest/dist/puter.min.js";
+  <script>
+    const sendBtn = document.getElementById("sendBtn");
+    const promptBox = document.getElementById("promptBox");
+    const responseBox = document.getElementById("responseBox");
+    const logsBox = document.getElementById("logsBox");
 
-    async function enviar() {
-      const prompt = document.getElementById("prompt").value;
-      const fileInput = document.getElementById("imageInput");
-      const responseBox = document.getElementById("responseBox");
-      const logs = document.getElementById("logs");
-
-      let images = [];
-
-      // Si el usuario adjunta una imagen, convertirla a base64
-      if (fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const base64 = await toBase64(file);
-        images.push({ data: base64 });
-        logs.innerHTML += `<p>Imagen adjunta: ${file.name}</p>`;
-      } else {
-        logs.innerHTML += `<p>No se adjuntó imagen</p>`;
+    sendBtn.addEventListener("click", async () => {
+      const prompt = promptBox.value.trim();
+      if (!prompt) {
+        logsBox.value += "No se ingresó ningún prompt\n";
+        return;
       }
 
-      logs.innerHTML += `<p>Prompt enviado: "${prompt}"</p>`;
+      logsBox.value += `Consultando modelo con: ${prompt}\n`;
 
       try {
-        const reply = await puter.ai.chat({
-          model: "google/gemini-2.5-flash",
-          messages: [{ role: "user", content: prompt }],
-          images: images
-        });
-
-        const respuesta = reply.choices[0].message.content;
-        responseBox.value = respuesta;
-
-        logs.innerHTML += `<p>Respuesta recibida: ${respuesta}</p>`;
-        console.log("Respuesta completa:", reply);
-
-        // Enviar log al backend (solo timestamp, prompt y respuesta)
-        await fetch("/log", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: prompt,
-            response: respuesta
-          })
-        });
+        const response = await puter.ai.chat(prompt, { model: "gpt-5-nano" });
+        responseBox.value = response;
+        logsBox.value += "Respuesta recibida\n";
       } catch (err) {
-        responseBox.value = "Error: " + err.message;
-        logs.innerHTML += `<p>Error: ${err.message}</p>`;
-        console.error("Error:", err);
+        logsBox.value += "Error: " + err.message + "\n";
       }
-    }
 
-    // Función para convertir archivo a base64
-    function toBase64(file) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(",")[1]);
-        reader.onerror = error => reject(error);
-        reader.readAsDataURL(file);
-      });
-    }
+      // Limpiar la caja de prompt después de enviar
+      promptBox.value = "";
+    });
   </script>
 </body>
 </html>
