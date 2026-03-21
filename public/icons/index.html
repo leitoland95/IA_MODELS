@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Analizador de Imágenes con Puter</title>
+  <script src="https://js.puter.com/v2/"></script>
+
+  <!-- Manifest y tema -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
+</head>
+<body>
+  <h2>Analizador de Imágenes con Puter</h2>
+
+  <label>Escribe tu prompt:</label><br>
+  <input type="text" id="promptBox" placeholder="Escribe aquí..."><br><br>
+
+  <label>Adjuntar imagen:</label><br>
+  <input type="file" id="imageUpload"><br><br>
+
+  <button id="sendBtn">Enviar</button><br><br>
+
+  <label>URL de la imagen subida:</label><br>
+  <input type="text" id="imageUrlBox" readonly style="width:400px;"><br><br>
+
+  <label>Respuesta del modelo:</label><br>
+  <textarea id="responseBox" rows="5" cols="50"></textarea><br><br>
+
+  <label>Logs:</label><br>
+  <textarea id="logsBox" rows="5" cols="50"></textarea>
+
+  <script>
+    const sendBtn = document.getElementById("sendBtn");
+    const promptBox = document.getElementById("promptBox");
+    const imageUpload = document.getElementById("imageUpload");
+    const imageUrlBox = document.getElementById("imageUrlBox");
+    const responseBox = document.getElementById("responseBox");
+    const logsBox = document.getElementById("logsBox");
+
+    // Subir imagen automáticamente al seleccionar archivo
+    imageUpload.addEventListener("change", async () => {
+      const file = imageUpload.files[0];
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      logsBox.value += "Subiendo imagen...\n";
+
+      try {
+        const res = await fetch("/upload", {
+          method: "POST",
+          body: formData
+        });
+        const data = await res.json();
+        if (data.url) {
+          imageUrlBox.value = data.url;
+          logsBox.value += "Imagen subida correctamente\n";
+        } else {
+          logsBox.value += "Error: el backend no devolvió URL\n";
+        }
+      } catch (err) {
+        logsBox.value += "Error al subir imagen: " + err.message + "\n";
+      }
+    });
+
+    // Al presionar enviar, usar imageUrlBox si existe
+    sendBtn.addEventListener("click", async () => {
+      const prompt = promptBox.value.trim();
+      const imageUrl = imageUrlBox.value.trim();
+
+      if (!prompt && !imageUrl) {
+        logsBox.value += "No se ingresó prompt ni imagen\n";
+        return;
+      }
+
+      logsBox.value += "Consultando modelo...\n";
+
+      try {
+        const response = await puter.ai.chat(
+          prompt || "Describe la imagen",
+          imageUrl || null,
+          { model: "google/gemini-2.5-flash" }
+        );
+        responseBox.value = response;
+        logsBox.value += "Respuesta recibida\n";
+      } catch (err) {
+        logsBox.value += "Error: " + err.message + "\n";
+      }
+
+      // Limpiar prompt después de enviar
+      promptBox.value = "";
+    });
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.error('Error al registrar SW', err));
+    }
+  </script>
+</body>
+</html>
