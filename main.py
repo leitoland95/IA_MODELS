@@ -24,13 +24,13 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 # Montar carpeta frontend
-app.mount("/frontend", StaticFiles(directory="frontend"), name="frontend")
+app.mount("/public", StaticFiles(directory="public"), name="public")
 
 logs = []
 
 @app.get("/")
 def serve_index():
-    return FileResponse(os.path.join("frontend", "index.html"))
+    return FileResponse(os.path.join("public", "index.html"))
 
 @app.post("/like")
 async def like_button(request: Request):
