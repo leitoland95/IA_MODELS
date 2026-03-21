@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <title>Analizador de Imágenes con Puter</title>
   <script src="https://js.puter.com/v2/"></script>
+
+  <!-- Manifest y tema -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#000000">
 </head>
 <body>
   <h2>Analizador de Imágenes con Puter</h2>
@@ -87,6 +91,13 @@
       // Limpiar prompt después de enviar
       promptBox.value = "";
     });
+
+    // Registrar Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then(reg => console.log('Service Worker registrado', reg))
+        .catch(err => console.error('Error al registrar SW', err));
+    }
   </script>
 </body>
 </html>
