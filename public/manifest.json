@@ -1,7 +1,7 @@
 {
   "name": "Analizador de Imágenes con Puter",
   "short_name": "Analizador",
-  "start_url": "/index.html",
+  "start_url": "/public/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
